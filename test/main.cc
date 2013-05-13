@@ -4,22 +4,23 @@
 
 #include "ptw.h"
 
-class Fib : public ptw::Queue {
+class Prime : public ptw::Queue {
 private:
   int res_;
   int n_;
 
 public:
-  Fib (int n) : res_(0), n_(n) {}  
-  ~Fib () {}
+  Prime (int n) : res_(0), n_(n) {}  
+  ~Prime () {}
 
   int calc (int n) {
-    if (n <= 2 ) {
-      return 1;
+    for (int i = 2; i < n; i++) {
+      if (n % i == 0) {
+        return 1;
+      }
     }
-    else {
-      return this->calc (n - 2) + this->calc (n - 1);
-    }
+    
+    return 2;
   }
   void exec () {
     this->res_ = this->calc (this->n_);
@@ -31,20 +32,21 @@ public:
 
 TEST (Ptw, Basic) {
   ptw::Ptw * p = new ptw::Ptw (2);
-  std::map <int, Fib *> q_list;
+  std::map <int, Prime *> q_list;
 
-  const int task_num = 1000;
+  const int task_num = 10000;
   for (int n = 0; n < task_num; n++) {
-    Fib * f = new Fib (n);
-
+    Prime * f = new Prime (n);
     p->push_queue (f);
+    q_list.insert (std::make_pair (n, f));
   }
 
   int count = 0;
-  ptw::Queue * q;
-  while (NULL != (q = p->pop_queue ())) {
+  for (int n = 0; n < task_num; n++) {
+    ptw::Queue * q = p->pop_queue ();
+    ASSERT_TRUE (q != NULL);
     count++;
-    Fib * f = dynamic_cast <Fib*> (q);    
+    Prime * f = dynamic_cast <Prime*> (q);    
     EXPECT_TRUE (f != NULL);
     EXPECT_GT (f->res (), 0);
     auto it = q_list.find (f->n ());

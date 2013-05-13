@@ -17,18 +17,20 @@ namespace ptw {
 
   class Worker {
   private:
-    std::queue <Queue *> in_queue_;
+    std::queue <Queue *> queue_;
     Ptw * ptw_;
     pthread_t th_;
     pthread_mutex_t mutex_;
     pthread_cond_t cond_;
     
     void ret_queue (Queue * q);
+    static void * loop (void * obj);
 
   public:
     Worker (Ptw * ptw);
     virtual ~Worker ();
     void input_queue (Queue * q);
+    void run ();
   };
 
   class Ptw {
@@ -38,12 +40,18 @@ namespace ptw {
     pthread_mutex_t mutex_;
     pthread_cond_t cond_;    
     std::vector <Worker *> worker_;
+    std::queue <Queue *> queue_;
+    int last_ptr_;
+    int in_count_;
+    int out_count_;
+
+    void ret_queue (Queue * q);
 
   public:
     Ptw (size_t worker_num);
     ~Ptw ();
     void push_queue (Queue *q); 
-    Queue * pop_queue ();
+    Queue * pop_queue (bool wait=true);
   };
 }
 
