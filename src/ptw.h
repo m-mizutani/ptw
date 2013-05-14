@@ -7,18 +7,7 @@
 
 namespace ptw {
   class Ptw;
-  class QueueList;
-
-  class Queue {
-    friend QueueList;
-  private:
-    Queue * next_;
-
-  public:    
-    Queue ();
-    virtual ~Queue ();
-    virtual void exec () = 0; 
-  };
+  class Queue;
 
   class QueueList {
   private:
@@ -31,6 +20,18 @@ namespace ptw {
     void push (Queue * q);
     Queue * pop ();
     Queue * pop_bulk ();
+  };
+
+
+  class Queue {
+    friend class QueueList;
+  private:
+    Queue * next_;
+
+  public:    
+    Queue ();
+    virtual ~Queue ();
+    virtual void exec () = 0; 
   };
 
   class Worker {
