@@ -108,6 +108,9 @@ def build(bld):
 
     # test code
     inc_dir = os.path.join (bld.path.abspath(), 'src')
+    rpath_list = [os.path.join (bld.env.PREFIX, 'lib'),
+                  os.path.join (bld.path.abspath(), 'build', '..', 'src'),
+                  os.path.join (bld.path.abspath(), 'build')]
     if bld.env.test:
         src_list = ['test/main.cc']
         libs = ['gtest', 'pthread']
@@ -118,9 +121,9 @@ def build(bld):
                     lib = libs,
                     includes = [inc_dir],
                     LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
-                    rpath = [os.path.join (bld.env.PREFIX, 'lib'),
-                             os.path.join (bld.path.abspath(), 'build', '..', 'src')])
+                    rpath = rpath_list)
 
+    print bld.path.abspath ()
     src_list = ['test/perf.cc']
     bld.program(features = 'cxxprogram',
                 source = src_list,
@@ -129,9 +132,7 @@ def build(bld):
                 lib = main_lib,
                 includes = [inc_dir],
                 LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
-                rpath = [os.path.join (bld.env.PREFIX, 'lib'),
-                         os.path.join (bld.path.abspath(), 'build', '..', 'src')])
-
+                rpath = rpath_list)
 
 
 def shutdown(ctx):
