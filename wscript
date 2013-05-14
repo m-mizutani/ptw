@@ -123,7 +123,6 @@ def build(bld):
                     LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
                     rpath = rpath_list)
 
-    print bld.path.abspath ()
     src_list = ['test/perf.cc']
     bld.program(features = 'cxxprogram',
                 source = src_list,

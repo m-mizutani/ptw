@@ -12,9 +12,9 @@ public:
 };
 
 int main (int argc, char *argv[]) {
-  const int task_num = 10000;
+  const int task_num = 1024 * 1024;
   std::vector <Task*> task_array (task_num);
-  const int test_num = 10;
+  const int test_num = 32;
   std::deque <double> ts_list;
 
   for (size_t i = 0; i < task_array.size (); i++) {

@@ -50,6 +50,7 @@ namespace ptw {
     void input_queue (Queue * q);
     void run ();
     void ret_queue (Queue * q);
+    pthread_t pthread () const;
   };
 
   class Ptw {

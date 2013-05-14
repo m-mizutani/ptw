@@ -108,6 +108,10 @@ namespace ptw {
     }    
   }
 
+  pthread_t Worker::pthread () const {
+    return this->th_;
+  }
+
   // ----------------------------------------------------------
   // Ptw
   Ptw::Ptw (size_t worker_num) : 
@@ -130,6 +134,11 @@ namespace ptw {
   }
 
   Ptw::~Ptw () {
+    for (size_t i = 0; i < this->worker_.size (); i++) {
+      pthread_cancel (this->worker_[i]->pthread ());
+      pthread_join (this->worker_[i]->pthread (), NULL);
+      delete this->worker_[i];
+    }
   }
 
   void Ptw::ret_queue (Queue * q) {
