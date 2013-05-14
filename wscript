@@ -108,8 +108,7 @@ def build(bld):
 
     # test code
     if bld.env.test:
-        src_list = []
-        src_list.extend (get_src_list ('test', cc_file))
+        src_list = ['test/main.cc']
         inc_dir = os.path.join (bld.path.abspath(), 'src')
 
         libs = ['gtest', 'pthread']
@@ -123,6 +122,16 @@ def build(bld):
                     rpath = [os.path.join (bld.env.PREFIX, 'lib'),
                              os.path.join (bld.path.abspath(), 'build', '..', 'src')])
     
+    src_list = ['test/perf.cc']
+    bld.program(features = 'cxxprogram',
+                source = src_list,
+                target = 'ptw_perf',
+                use = [target_name],
+                lib = libs,
+                includes = [inc_dir],
+                LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
+                rpath = [os.path.join (bld.env.PREFIX, 'lib'),
+                         os.path.join (bld.path.abspath(), 'build', '..', 'src')])
 
 
 
