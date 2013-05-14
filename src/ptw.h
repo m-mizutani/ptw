@@ -7,17 +7,36 @@
 
 namespace ptw {
   class Ptw;
+  class QueueList;
 
   class Queue {
+    friend QueueList;
+  private:
+    Queue * next_;
+
   public:    
     Queue ();
     virtual ~Queue ();
-    virtual void exec () = 0;    
+    virtual void exec () = 0; 
+  };
+
+  class QueueList {
+  private:
+    Queue * head_;
+    Queue * tail_;
+
+  public:
+    QueueList ();
+    ~QueueList ();
+    void push (Queue * q);
+    Queue * pop ();
+    Queue * pop_bulk ();
   };
 
   class Worker {
   private:
-    std::queue <Queue *> queue_;
+    QueueList queue_;
+    // std::queue <Queue *> queue_;
     Ptw * ptw_;
     pthread_t th_;
     pthread_mutex_t mutex_;
@@ -40,7 +59,8 @@ namespace ptw {
     pthread_mutex_t mutex_;
     pthread_cond_t cond_;    
     std::vector <Worker *> worker_;
-    std::queue <Queue *> queue_;
+    QueueList queue_;
+    // std::queue <Queue *> queue_;
     int last_ptr_;
     int in_count_;
     int out_count_;

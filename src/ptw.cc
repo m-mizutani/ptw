@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "ptw.h"
 #include "debug.h"
@@ -9,9 +10,53 @@ namespace ptw {
 
   // ----------------------------------------------------------
   // Queue
-  Queue::Queue () {
+  Queue::Queue () : next_(NULL) {
   }
   Queue::~Queue () {
+  }
+
+  QueueList::QueueList () : head_(NULL), tail_(NULL) {}
+  QueueList::~QueueList () {}
+  void QueueList::push (Queue * q) {
+    assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
+    q->next_ = NULL;
+    if (this->tail_) {
+      this->tail_->next_ = q;
+      this->tail_ = q;
+    }
+    else {
+      this->head_ = this->tail_ = q;
+    }
+  }
+  Queue * QueueList::pop () {
+    assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
+
+    if (this->head_) {
+      Queue * q = this->head_;      
+      if (this->tail_ == q) {
+        assert (q->next_ == NULL);
+        this->tail_ = NULL;
+      }
+
+      this->head_ = q->next_;
+      q->next_ = NULL;
+      return q;
+    } 
+    else {
+      return NULL;
+    }
+  }
+  Queue * QueueList::pop_bulk () {
+    assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
+
+    if (this->head_) {
+      Queue * q = this->head_;      
+      this->head_ = this->tail_ = NULL;
+      return q;
+    } 
+    else {
+      return NULL;
+    }    
   }
 
   // ----------------------------------------------------------
@@ -43,18 +88,14 @@ namespace ptw {
 
     while (true) {
       pthread_mutex_lock (&(w->mutex_));
-      if (w->queue_.size () == 0) {
+      if (NULL == (q = w->queue_.pop ())) {
         debug (DBG, "enter waiting: %p", w);
         pthread_cond_wait (&(w->cond_), &(w->mutex_));
       }
 
       debug (DBG, "run: %p", w);
-      if (w->queue_.size () > 0) {
-        q = w->queue_.front ();
-        w->queue_.pop ();
-      }
-      else {
-        q = NULL;
+      if (NULL == q) {
+        q = w->queue_.pop ();
       }
       pthread_mutex_unlock (&(w->mutex_));
 
@@ -112,17 +153,16 @@ namespace ptw {
     Queue * q;
 
     pthread_mutex_lock (&(this->mutex_));
-    if (this->queue_.size () == 0 && wait && this->in_count_ > this->out_count_) {
+    if (NULL == (q = this->queue_.pop ()) && 
+        wait && this->in_count_ > this->out_count_) {
       pthread_cond_wait (&(this->cond_), &(this->mutex_));
     }
 
-    if (this->queue_.size () > 0) {
-      q = this->queue_.front ();
-      this->queue_.pop ();
-      this->out_count_++;
-    }
-    else {
-      q = NULL;
+    if (NULL == q) {
+      q = this->queue_.pop ();
+      if (q) {
+        this->out_count_++;
+      }
     }
     pthread_mutex_unlock (&(this->mutex_));
 

@@ -11,7 +11,7 @@ public:
 };
 
 int main (int argc, char *argv[]) {
-  const int task_num = 10000000;
+  const int task_num = 10000;
   std::vector <Task*> task_array (task_num);
   const int test_num = 10;
   std::deque <double> ts_list;
