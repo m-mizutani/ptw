@@ -23,7 +23,6 @@ namespace ptw {
     pthread_mutex_t mutex_;
     pthread_cond_t cond_;
     
-    void ret_queue (Queue * q);
     static void * loop (void * obj);
 
   public:
@@ -31,6 +30,7 @@ namespace ptw {
     virtual ~Worker ();
     void input_queue (Queue * q);
     void run ();
+    void ret_queue (Queue * q);
   };
 
   class Ptw {
@@ -48,10 +48,13 @@ namespace ptw {
     void ret_queue (Queue * q);
 
   public:
-    Ptw (size_t worker_num);
+    Ptw (size_t worker_num=0);
     ~Ptw ();
     void push_queue (Queue *q); 
     Queue * pop_queue (bool wait=true);
+
+    size_t worker_num () const;
+    static size_t cpu_core_num () ;
   };
 }
 

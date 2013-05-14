@@ -11,7 +11,7 @@ public:
 };
 
 int main (int argc, char *argv[]) {
-  const int task_num = 1000000;
+  const int task_num = 10000000;
   std::vector <Task*> task_array (task_num);
   const int test_num = 10;
   std::deque <double> ts_list;
@@ -20,10 +20,11 @@ int main (int argc, char *argv[]) {
     task_array[i] = new Task ();
   }
 
-  for (int t = 0; t < test_num; t++) {
-    ptw::Ptw *pw = new ptw::Ptw (2);
-    struct timeval ts_start, ts_end, ts_sub;
+  const size_t core_num = ptw::Ptw::cpu_core_num ();
 
+  for (int t = 0; t < test_num; t++) {
+    ptw::Ptw *pw = new ptw::Ptw (core_num);
+    struct timeval ts_start, ts_end, ts_sub;
     gettimeofday (&ts_start, NULL);
     for (int i = 0; i < task_array.size (); i++) {
       pw->push_queue (task_array[i]);
@@ -53,6 +54,7 @@ int main (int argc, char *argv[]) {
   }
 
   double avg = total / (double)(test_num);
+  printf ("Core Num: %zd\n", core_num);
   printf ("Average: %f task/sec\n", (double)(task_num) / avg);
   printf ("Fastest: %f task/sec\n", (double)(task_num) / min);
   printf ("Slowest: %f task/sec\n", (double)(task_num) / max);

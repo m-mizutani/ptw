@@ -1,3 +1,6 @@
+#include <stdio.h>
+#include <unistd.h>
+
 #include "ptw.h"
 #include "debug.h"
 
@@ -69,9 +72,14 @@ namespace ptw {
     last_ptr_(0),
     in_count_(0),
     out_count_(0)
- { 
+  { 
     ::pthread_mutex_init (&(this->mutex_), NULL);
     ::pthread_cond_init (&(this->cond_), NULL);
+
+    if (worker_num == 0) {
+      worker_num = Ptw::cpu_core_num ();
+      this->worker_.resize (worker_num, NULL);
+    }
     for (size_t i = 0; i < worker_num; i++) {
       this->worker_[i] = new Worker (this);
       this->worker_[i]->run ();
@@ -120,6 +128,15 @@ namespace ptw {
 
     return q;
   }
+
+  size_t Ptw::worker_num () const {
+    return this->worker_.size ();
+  }
+
+  size_t Ptw::cpu_core_num () {
+    return ::sysconf(_SC_NPROCESSORS_ONLN);
+  }
+
 }
 
 
