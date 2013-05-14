@@ -2,6 +2,7 @@
 #include <deque>
 #include <vector>
 #include <sys/time.h>
+#include <stdio.h>
 
 class Task : public ptw::Queue {
 public:
@@ -16,7 +17,7 @@ int main (int argc, char *argv[]) {
   const int test_num = 10;
   std::deque <double> ts_list;
 
-  for (int i = 0; i < task_array.size (); i++) {
+  for (size_t i = 0; i < task_array.size (); i++) {
     task_array[i] = new Task ();
   }
 
@@ -26,7 +27,7 @@ int main (int argc, char *argv[]) {
     ptw::Ptw *pw = new ptw::Ptw (core_num);
     struct timeval ts_start, ts_end, ts_sub;
     gettimeofday (&ts_start, NULL);
-    for (int i = 0; i < task_array.size (); i++) {
+    for (size_t i = 0; i < task_array.size (); i++) {
       pw->push_queue (task_array[i]);
     }
 
@@ -58,6 +59,10 @@ int main (int argc, char *argv[]) {
   printf ("Average: %f task/sec\n", (double)(task_num) / avg);
   printf ("Fastest: %f task/sec\n", (double)(task_num) / min);
   printf ("Slowest: %f task/sec\n", (double)(task_num) / max);
-  
+
+  for (size_t i = 0; i < task_array.size (); i++) {
+    delete task_array[i];
+  }
+
   return 0;
 }

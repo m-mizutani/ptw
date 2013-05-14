@@ -25,20 +25,22 @@ namespace ptw {
       this->tail_ = q;
     }
     else {
+      assert (this->head_ == NULL);
       this->head_ = this->tail_ = q;
     }
   }
   Queue * QueueList::pop () {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
-
+    // debug (1, "(%p) head = %p", this, this->head_);
     if (this->head_) {
-      Queue * q = this->head_;      
+      Queue * q = this->head_;
+      this->head_ = q->next_;
+
       if (this->tail_ == q) {
         assert (q->next_ == NULL);
         this->tail_ = NULL;
       }
 
-      this->head_ = q->next_;
       q->next_ = NULL;
       return q;
     } 
@@ -160,10 +162,11 @@ namespace ptw {
 
     if (NULL == q) {
       q = this->queue_.pop ();
-      if (q) {
-        this->out_count_++;
-      }
     }
+    if (q) {
+      this->out_count_++;
+    }
+
     pthread_mutex_unlock (&(this->mutex_));
 
     return q;
