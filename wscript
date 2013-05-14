@@ -107,10 +107,9 @@ def build(bld):
     bld.install_files('${PREFIX}/include', lib_fname) 
 
     # test code
+    inc_dir = os.path.join (bld.path.abspath(), 'src')
     if bld.env.test:
         src_list = ['test/main.cc']
-        inc_dir = os.path.join (bld.path.abspath(), 'src')
-
         libs = ['gtest', 'pthread']
         bld.program(features = 'cxxprogram',
                     source = src_list,
@@ -121,13 +120,13 @@ def build(bld):
                     LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
                     rpath = [os.path.join (bld.env.PREFIX, 'lib'),
                              os.path.join (bld.path.abspath(), 'build', '..', 'src')])
-    
+
     src_list = ['test/perf.cc']
     bld.program(features = 'cxxprogram',
                 source = src_list,
                 target = 'ptw_perf',
                 use = [target_name],
-                lib = libs,
+                lib = main_lib,
                 includes = [inc_dir],
                 LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
                 rpath = [os.path.join (bld.env.PREFIX, 'lib'),
