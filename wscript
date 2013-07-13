@@ -112,7 +112,7 @@ def build(bld):
                   os.path.join (bld.path.abspath(), 'build', '..', 'src'),
                   os.path.join (bld.path.abspath(), 'build')]
     if bld.env.test:
-        src_list = ['test/main.cc']
+        src_list = ['test/main.cc', 'test/opt_parse.cc']
         libs = ['gtest', 'pthread']
         bld.program(features = 'cxxprogram',
                     source = src_list,
