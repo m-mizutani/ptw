@@ -59,14 +59,14 @@ int main (int argc, char *argv[]) {
   const size_t core_num = ptw::Ptw::cpu_core_num ();
   const size_t worker_num = (static_cast<int>(opt.get("worker_num")) > 0) ?
     opt.get("worker_num") : core_num;
-  
+  const bool verbose = opt.get("verbose");
 
   std::vector <Job*> job_array (job_num);
   std::deque <double> ts_list;
 
 
   // show parameters
-  if (opt.get("verbose")) {
+  if (verbose) {
     printf ("  Core Num: %8zd\n", core_num);
     printf ("Worker Num: %8zd\n", worker_num);
     printf ("   Job Num: %8zd\n", job_num);
@@ -82,7 +82,7 @@ int main (int argc, char *argv[]) {
 
   // do test
   for (int t = 0; t < test_num; t++) {
-    ptw::Ptw *pw = new ptw::Ptw (core_num);
+    ptw::Ptw *pw = new ptw::Ptw (worker_num);
     struct timeval ts_start, ts_end, ts_sub;
     gettimeofday (&ts_start, NULL);
     for (size_t i = 0; i < job_array.size (); i++) {
@@ -114,15 +114,20 @@ int main (int argc, char *argv[]) {
   }
 
   double avg = total / (double)(test_num);
-  
+
+  double workload = static_cast <double> (job_size * job_num);
+
   // show result
   if (out_fmt == "text") {
-    printf ("Average: %f job/sec\n", (double)(job_num) / avg);
-    printf ("Fastest: %f job/sec\n", (double)(job_num) / min);
-    printf ("Slowest: %f job/sec\n", (double)(job_num) / max);
+    printf ("Score: %f\n", workload / avg);
+    printf ("Avg: %f job/sec\n", (double)(job_num) / avg);
+    if (verbose) {
+      printf ("Fastest: %f job/sec\n", (double)(job_num) / min);
+      printf ("Slowest: %f job/sec\n", (double)(job_num) / max);
+    }
   }
   else if (out_fmt == "csv") {
-    printf ("%f, %f, %f\n", (double)(job_num) / avg,(double)(job_num) / min, (double)(job_num) / max);
+    printf ("%zd, %zd, %f\n", worker_num, job_size, workload / avg);
   }
 
   // remove jobs
