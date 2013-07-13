@@ -11,7 +11,7 @@
 
 class Job : public ptw::Queue {
 private:
-  const static size_t base_load_ = 1000;
+  const static size_t base_load_ = 1;
   size_t job_size_;
   size_t r_;
   int res_;
@@ -32,29 +32,55 @@ public:
 };
 
 int main (int argc, char *argv[]) {
+  // configure parser
   optparse::OptionParser psr = optparse::OptionParser ();
-  psr.add_option("-j", "--job-num").set_default(10) .dest("job_num") .type("int") .help("number of job (x 1024)");
-  psr.add_option("-t", "--test-num").set_default(32) .dest("test_num") .type("int") .help("number of test repeat");
-  psr.add_option("-s", "--job-size").set_default(1) .dest("job_size") .type("int") .help("task size of each job");
-  psr.add_option("-f", "--out-fmt").set_default("text") .dest("out_fmt") .help("output format [text,csv]");
+  psr.add_option("-j", "--job-num")
+    .set_default(10) .dest("job_num") .type("int") .help("number of job (x 1024)");
+  psr.add_option("-t", "--test-num")
+    .set_default(32) .dest("test_num") .type("int") .help("number of test repeat");
+  psr.add_option("-s", "--job-size")
+    .set_default(1) .dest("job_size") .type("int") .help("task size of each job");
+  psr.add_option("-f", "--out-fmt")
+    .set_default("text") .dest("out_fmt") .help("output format [text,csv]");
+  psr.add_option("-v", "--verbose")
+    .action("store_true") .dest("verbose") .help("verbose");
+  psr.add_option("-w", "--worker-num")
+    .set_default(0) .dest("worker_num") .type("int") .help("number of worker (default is cpu #)");
 
+  // parsing
   optparse::Values& opt = psr.parse_args(argc, argv);
   std::vector<std::string> args = psr.args();
 
+  // set parameters
   const int job_num = static_cast<int> (opt.get("job_num")) * 1024;
   const int test_num = opt.get("test_num");
   const size_t job_size = opt.get("job_size");
-
+  const std::string out_fmt = opt["out_fmt"];
+  const size_t core_num = ptw::Ptw::cpu_core_num ();
+  const size_t worker_num = (static_cast<int>(opt.get("worker_num")) > 0) ?
+    opt.get("worker_num") : core_num;
+  
 
   std::vector <Job*> job_array (job_num);
   std::deque <double> ts_list;
 
+
+  // show parameters
+  if (opt.get("verbose")) {
+    printf ("  Core Num: %8zd\n", core_num);
+    printf ("Worker Num: %8zd\n", worker_num);
+    printf ("   Job Num: %8zd\n", job_num);
+    printf ("  Job Size: %8zd\n", job_size);
+    printf ("  Test Num: %8zd\n", test_num);
+    
+  }
+
+  // create jobs
   for (size_t i = 0; i < job_array.size (); i++) {
     job_array[i] = new Job (job_size);
   }
 
-  const size_t core_num = ptw::Ptw::cpu_core_num ();
-
+  // do test
   for (int t = 0; t < test_num; t++) {
     ptw::Ptw *pw = new ptw::Ptw (core_num);
     struct timeval ts_start, ts_end, ts_sub;
@@ -75,6 +101,7 @@ int main (int argc, char *argv[]) {
     ts_list.push_back (ts);
   }
 
+  // calculate result
   double total = 0;
   double max = 0; 
   double min = 0;
@@ -87,11 +114,18 @@ int main (int argc, char *argv[]) {
   }
 
   double avg = total / (double)(test_num);
-  printf ("Core Num: %zd\n", core_num);
-  printf ("Average: %f job/sec\n", (double)(job_num) / avg);
-  printf ("Fastest: %f job/sec\n", (double)(job_num) / min);
-  printf ("Slowest: %f job/sec\n", (double)(job_num) / max);
+  
+  // show result
+  if (out_fmt == "text") {
+    printf ("Average: %f job/sec\n", (double)(job_num) / avg);
+    printf ("Fastest: %f job/sec\n", (double)(job_num) / min);
+    printf ("Slowest: %f job/sec\n", (double)(job_num) / max);
+  }
+  else if (out_fmt == "csv") {
+    printf ("%f, %f, %f\n", (double)(job_num) / avg,(double)(job_num) / min, (double)(job_num) / max);
+  }
 
+  // remove jobs
   for (size_t i = 0; i < job_array.size (); i++) {
     delete job_array[i];
   }
