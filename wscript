@@ -123,7 +123,7 @@ def build(bld):
                     LIBDIR = [os.path.join (bld.env.PREFIX, 'lib')],
                     rpath = rpath_list)
 
-    src_list = ['test/perf.cc']
+    src_list = ['test/perf.cc', 'test/opt_parse.cc']
     bld.program(features = 'cxxprogram',
                 source = src_list,
                 target = 'ptw_perf',
