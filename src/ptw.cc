@@ -15,7 +15,7 @@ namespace ptw {
   Queue::~Queue () {
   }
 
-  QueueList::QueueList () : head_(NULL), tail_(NULL) {}
+  QueueList::QueueList () : head_(NULL), tail_(NULL), count_(0) {}
   QueueList::~QueueList () {}
   void QueueList::push (Queue * q) {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
@@ -28,10 +28,14 @@ namespace ptw {
       assert (this->head_ == NULL);
       this->head_ = this->tail_ = q;
     }
+    this->count_++;
+    assert (this->count_ > 0);
   }
   Queue * QueueList::pop () {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
     // debug (1, "(%p) head = %p", this, this->head_);
+
+
     if (this->head_) {
       Queue * q = this->head_;
       this->head_ = q->next_;
@@ -41,6 +45,8 @@ namespace ptw {
         this->tail_ = NULL;
       }
 
+      this->count_--;
+      assert (this->count_ >= 0);
       q->next_ = NULL;
       return q;
     } 
@@ -50,7 +56,7 @@ namespace ptw {
   }
   Queue * QueueList::pop_bulk () {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
-
+    this->count_ = 0;
     if (this->head_) {
       Queue * q = this->head_;      
       this->head_ = this->tail_ = NULL;
@@ -60,24 +66,31 @@ namespace ptw {
       return NULL;
     }    
   }
+  int QueueList::count () const {
+    return this->count_;
+  }
 
   // ----------------------------------------------------------
   // Worker
-  Worker::Worker (Ptw * ptw) : ptw_(ptw) {
+  Worker::Worker (Ptw * ptw) : ptw_(ptw), done_(0), wait_(0) {
     ::pthread_mutex_init (&(this->mutex_), NULL);
     ::pthread_cond_init (&(this->cond_), NULL);
   }
   Worker::~Worker () {
+    debug (1, "done = %zd, wait = %zd", this->done_, this->wait_);
   }
   void Worker::ret_queue (Queue * q) {
     this->ptw_->ret_queue (q);
   }
-  void Worker::input_queue (Queue * q) {
+  int Worker::input_queue (Queue * q) {
+    int qc;
     pthread_mutex_lock (&(this->mutex_));
     // debug (DBG, "input queue: %p", q);
     this->queue_.push (q);
+    qc = this->queue_.count ();
     pthread_cond_signal (&(this->cond_));
     pthread_mutex_unlock (&(this->mutex_));    
+    return qc;
   }
   void Worker::run () {
     ::pthread_create (&(this->th_), NULL, Worker::loop, this);
@@ -91,7 +104,7 @@ namespace ptw {
     while (true) {
       pthread_mutex_lock (&(w->mutex_));
       if (NULL == (q = w->queue_.pop ())) {
-        debug (DBG, "enter waiting: %p", w);
+        w->wait_++;
         pthread_cond_wait (&(w->cond_), &(w->mutex_));
       }
 
@@ -102,6 +115,7 @@ namespace ptw {
       pthread_mutex_unlock (&(w->mutex_));
 
       if (q) {
+        w->done_++;
         q->exec ();
         w->ret_queue (q);
       }
@@ -157,7 +171,8 @@ namespace ptw {
     }
 
     this->in_count_++;
-    this->worker_[this->last_ptr_]->input_queue (q);
+    int qc = this->worker_[this->last_ptr_]->input_queue (q);
+    
   }
 
   Queue * Ptw::pop_queue (bool wait) {
