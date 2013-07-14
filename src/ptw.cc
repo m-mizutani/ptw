@@ -14,6 +14,16 @@ namespace ptw {
   }
   Queue::~Queue () {
   }
+  Queue * Queue::detach () {
+    if (this->next_) {
+      Queue * next = this->next_;
+      this->next_ = NULL;
+      return next;
+    }
+    else {
+      return NULL;
+    }
+  }
 
   QueueList::QueueList () : head_(NULL), tail_(NULL), count_(0) {}
   QueueList::~QueueList () {}
@@ -60,6 +70,7 @@ namespace ptw {
     if (this->head_) {
       Queue * q = this->head_;      
       this->head_ = this->tail_ = NULL;
+      this->count_ = 0;
       return q;
     } 
     else {
@@ -77,7 +88,7 @@ namespace ptw {
     ::pthread_cond_init (&(this->cond_), NULL);
   }
   Worker::~Worker () {
-    debug (1, "done = %zd, wait = %zd", this->done_, this->wait_);
+    debug (0, "done = %zd, wait = %zd", this->done_, this->wait_);
   }
   void Worker::ret_queue (Queue * q) {
     this->ptw_->ret_queue (q);
@@ -97,27 +108,30 @@ namespace ptw {
   }
 
   void * Worker::loop (void * obj) {
-    Worker * w = static_cast<Worker *>(obj);
-    Queue * q;
+    Worker *w = static_cast<Worker *>(obj);
+    Queue *q, *next;
     debug (DBG, "start loop %p", w);
 
     while (true) {
       pthread_mutex_lock (&(w->mutex_));
-      if (NULL == (q = w->queue_.pop ())) {
+      if (NULL == (q = w->queue_.pop_bulk ())) {
         w->wait_++;
         pthread_cond_wait (&(w->cond_), &(w->mutex_));
       }
 
       debug (DBG, "run: %p", w);
       if (NULL == q) {
-        q = w->queue_.pop ();
+        q = w->queue_.pop_bulk ();
       }
       pthread_mutex_unlock (&(w->mutex_));
 
       if (q) {
-        w->done_++;
-        q->exec ();
-        w->ret_queue (q);
+        do {
+          next = q->detach ();
+          w->done_++;
+          q->exec ();
+          w->ret_queue (q);
+        } while (NULL != (q = next));
       }
     }    
   }
@@ -132,7 +146,8 @@ namespace ptw {
     worker_(worker_num, NULL), 
     last_ptr_(0),
     in_count_(0),
-    out_count_(0)
+    out_count_(0),
+    q_total_(0), q_count_(0)
   { 
     ::pthread_mutex_init (&(this->mutex_), NULL);
     ::pthread_cond_init (&(this->cond_), NULL);
@@ -148,6 +163,7 @@ namespace ptw {
   }
 
   Ptw::~Ptw () {
+    debug (1, "avg queuing: %f", (double)this->q_total_ / (double)this->q_count_);
     for (size_t i = 0; i < this->worker_.size (); i++) {
       pthread_cancel (this->worker_[i]->pthread ());
       pthread_join (this->worker_[i]->pthread (), NULL);
@@ -172,7 +188,8 @@ namespace ptw {
 
     this->in_count_++;
     int qc = this->worker_[this->last_ptr_]->input_queue (q);
-    
+    this->q_total_ += qc;
+    this->q_count_ += 1;
   }
 
   Queue * Ptw::pop_queue (bool wait) {

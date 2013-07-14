@@ -34,6 +34,7 @@ namespace ptw {
     Queue ();
     virtual ~Queue ();
     virtual void exec () = 0; 
+    Queue * detach (); // return detached queues
   };
 
   class Worker {
@@ -69,6 +70,9 @@ namespace ptw {
     int last_ptr_;
     int in_count_;
     int out_count_;
+
+    size_t q_total_;
+    size_t q_count_;
 
     void ret_queue (Queue * q);
 
