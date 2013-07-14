@@ -41,6 +41,26 @@ namespace ptw {
     this->count_++;
     assert (this->count_ > 0);
   }
+  void QueueList::push_bulk (QueueList *q_list) {
+    assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
+
+    if (this->tail_) {
+      this->tail_->next_ = q_list->head_;
+      this->tail_ = q_list->tail_;
+    }
+    else {
+      assert (this->head_ == NULL);
+      this->head_ = q_list->head_;
+      this->tail_ = q_list->tail_;
+    }
+
+    this->count_ += q_list->count_;
+
+    q_list->head_ = q_list->tail_ = NULL;
+    q_list->count_ = 0;
+
+    assert (this->count_ > 0);
+  }
   Queue * QueueList::pop () {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
     // debug (1, "(%p) head = %p", this, this->head_);
@@ -66,7 +86,7 @@ namespace ptw {
   }
   Queue * QueueList::pop_bulk () {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
-    this->count_ = 0;
+
     if (this->head_) {
       Queue * q = this->head_;      
       this->head_ = this->tail_ = NULL;
@@ -88,9 +108,9 @@ namespace ptw {
     ::pthread_cond_init (&(this->cond_), NULL);
   }
   Worker::~Worker () {
-    debug (0, "done = %zd, wait = %zd", this->done_, this->wait_);
+    // debug (0, "done = %zd, wait = %zd", this->done_, this->wait_);
   }
-  void Worker::ret_queue (Queue * q) {
+  void Worker::ret_queue (QueueList * q) {
     this->ptw_->ret_queue (q);
   }
   int Worker::input_queue (Queue * q) {
@@ -119,19 +139,23 @@ namespace ptw {
         pthread_cond_wait (&(w->cond_), &(w->mutex_));
       }
 
-      debug (DBG, "run: %p", w);
       if (NULL == q) {
         q = w->queue_.pop_bulk ();
       }
       pthread_mutex_unlock (&(w->mutex_));
-
+      
       if (q) {
+        int c = 0;
         do {
           next = q->detach ();
+          c++;
           w->done_++;
           q->exec ();
-          w->ret_queue (q);
+          w->out_queue_.push (q);
+          // w->ret_queue (q);
         } while (NULL != (q = next));
+
+        w->ret_queue (&(w->out_queue_));
       }
     }    
   }
@@ -163,7 +187,8 @@ namespace ptw {
   }
 
   Ptw::~Ptw () {
-    debug (1, "avg queuing: %f", (double)this->q_total_ / (double)this->q_count_);
+    // debug (1, "avg queuing: %f", (double)this->q_total_ / (double)this->q_count_);
+
     for (size_t i = 0; i < this->worker_.size (); i++) {
       pthread_cancel (this->worker_[i]->pthread ());
       pthread_join (this->worker_[i]->pthread (), NULL);
@@ -171,9 +196,9 @@ namespace ptw {
     }
   }
 
-  void Ptw::ret_queue (Queue * q) {
+  void Ptw::ret_queue (QueueList * q_list) {
     pthread_mutex_lock (&(this->mutex_));
-    this->queue_.push (q);
+    this->queue_.push_bulk (q_list);
     pthread_cond_signal (&(this->cond_));
     pthread_mutex_unlock (&(this->mutex_));
   }
@@ -188,8 +213,8 @@ namespace ptw {
 
     this->in_count_++;
     int qc = this->worker_[this->last_ptr_]->input_queue (q);
-    this->q_total_ += qc;
-    this->q_count_ += 1;
+    // this->q_total_ += qc;
+    // this->q_count_ += 1;
   }
 
   Queue * Ptw::pop_queue (bool wait) {

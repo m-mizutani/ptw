@@ -19,6 +19,7 @@ namespace ptw {
     QueueList ();
     ~QueueList ();
     void push (Queue * q);
+    void push_bulk (QueueList *q_list);
     Queue * pop ();
     Queue * pop_bulk ();
     int count () const;
@@ -40,6 +41,7 @@ namespace ptw {
   class Worker {
   private:
     QueueList queue_;
+    QueueList out_queue_;
     Ptw * ptw_;
     pthread_t th_;
     pthread_mutex_t mutex_;
@@ -55,12 +57,12 @@ namespace ptw {
     virtual ~Worker ();
     int input_queue (Queue * q);
     void run ();
-    void ret_queue (Queue * q);
+    void ret_queue (QueueList * q);
     pthread_t pthread () const;
   };
 
   class Ptw {
-    friend void Worker::ret_queue (Queue * q);
+    friend void Worker::ret_queue (QueueList * q_list);
 
   private:
     pthread_mutex_t mutex_;
@@ -74,7 +76,7 @@ namespace ptw {
     size_t q_total_;
     size_t q_count_;
 
-    void ret_queue (Queue * q);
+    void ret_queue (QueueList * q_list);
 
   public:
     Ptw (size_t worker_num=0);
