@@ -44,6 +44,11 @@ namespace ptw {
   void QueueList::push_bulk (QueueList *q_list) {
     assert (!((this->head_ == NULL) ^ (this->tail_ == NULL)));
 
+    if (q_list->count_ == 0) {
+      assert (q_list->head_ == NULL && q_list->tail_ == NULL);
+      return ;
+    }
+
     if (this->tail_) {
       this->tail_->next_ = q_list->head_;
       this->tail_ = q_list->tail_;
@@ -219,22 +224,25 @@ namespace ptw {
 
   Queue * Ptw::pop_queue (bool wait) {
     Queue * q;
+    
+    if (0 == this->buf_queue_.count ()) {
 
-    pthread_mutex_lock (&(this->mutex_));
-    if (NULL == (q = this->queue_.pop ()) && 
-        wait && this->in_count_ > this->out_count_) {
-      pthread_cond_wait (&(this->cond_), &(this->mutex_));
+      pthread_mutex_lock (&(this->mutex_));
+      if (0 == this->queue_.count () &&
+          wait && this->in_count_ > this->out_count_) {
+        pthread_cond_wait (&(this->cond_), &(this->mutex_));
+      }
+
+      this->buf_queue_.push_bulk (&(this->queue_));
+
+      pthread_mutex_unlock (&(this->mutex_));
+
     }
 
-    if (NULL == q) {
-      q = this->queue_.pop ();
-    }
+    q = this->buf_queue_.pop ();
     if (q) {
       this->out_count_++;
     }
-
-    pthread_mutex_unlock (&(this->mutex_));
-
     return q;
   }
 

@@ -69,6 +69,8 @@ namespace ptw {
     pthread_cond_t cond_;    
     std::vector <Worker *> worker_;
     QueueList queue_;
+    QueueList buf_queue_;
+
     int last_ptr_;
     int in_count_;
     int out_count_;
